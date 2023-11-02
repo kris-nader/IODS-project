@@ -1,5 +1,6 @@
 ---
 title: "IODS course project"
+author: "Kristen Michelle Nader"
 output:
   html_document:
     theme: cosmo

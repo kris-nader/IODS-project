@@ -1,6 +1,8 @@
 
 # About the project
 
+hello. its 6:11 Thrusday November 2nd. I expect this course to be a refresher on topics I am already familiar with. I found this course on sisu
+
 *Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
 
 ```{r}
