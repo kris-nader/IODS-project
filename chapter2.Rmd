@@ -1,13 +1,114 @@
-# Insert chapter 2 title here
+# Linear regression
 
 *Describe the work you have done this week and summarize your learning.*
+*Summary of the week (completed work and learning)*
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+Chapter 2 consists of 2 parts:  
+**-Data Wrangling.**In this section, we use survey data and make an analysis csv file using an R script (./data/create_learning2014.R).
+
+**-Data Analysis.** 
+In this section, we use the learning2014.csv file to do some exploratory analysis. This includes plots, linear regression, and qdiagnistic plots from our model
+nal model.\
+
+About the data: 
+This data wad from a survey done to study the relationshop between learning approaches and student achievements in an intro course to statistics in finland which took place from 03-12-2014 to 10-01-2015.
+
+
+## Part 1: data wrangling
+
+It is a 183x60 data(before processing/data wrangling):
+56 likert-scale variables on a scale of 1-5
+3 continuous variables age, attitude, points
+1 factor variable gender(male/female).
+
+We have then created an analysis dataset for this chapter. We can then run the **./data/create_learning2014.R** script which results in the **learningdata2014.csv** dataset in the same **data** directory. In this script, we create new variables based on the metadata hosted here: https://www.mv.helsinki.fi/home/kvehkala/JYTmooc/JYTOPKYS2-meta.txt and filter datapoints that have a points variable=0.
+
+After filtering, we have 7 variables and 166 observations:  
+
+- Gender: Male or Female. 
+- Age: In years, ranging from 17 to 55.  
+- Attitude: Global attitude toward statistics ~Da+Db+Dc+Dd+De+Df+Dg+Dh+Di+Dj. 
+- deep: Deep approach. Calculated by averaging the likert scale from 1-5 scale of 3 techniques(Seeking meaning: d_sm Relating ideas:d_ri and Use of evidence:d_ue). 
+- surf: Surface approach valculated simialr to deep based on 3 columns(lack of purpose:su_lp, unrelated memorizing:su_um and syllabus boundness:su_sb. 
+- stra: Strategic approach, Calculated similar to deep(organized studying:st_os & time management:st_tm). 
+- points: total points on an exam. 
+
+
+
+In addition, a pre-made **learningdata2014.csv** is available  https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/learning2014.txt. 
+
+We can use the following command to create the dataset, under the impression that the original data is in the **data** directory. 
 
 ```{r}
-date()
+library(dplyr)
+library(readr)
+#source("./data/create_learning2014.R")
 ```
 
-Here we go again...
+After some data wrangling, we have 7 variables: Age, attitude, points, gender, deep, stra, and surf.  The gender variable is a character (M/F) and others are doubles.
+```{r}
+data=data.frame(read_csv('./data/learning2014.csv'))
+str(data)
+```
+
+
+```{r}
+head(data)
+```
+
+
+```{r}
+summary(data)  
+```
+
+We can do some exploratory analysis: 
+Attitude and Points seem to have a linear relationship and also a positive linear relationship. Other relationships with points is a bit sketchy-- not as obvious as the relationship with attitude. 
+```{r}
+pairs(data[,-4])
+```
+
+There is also an imbalance in the number of males and females in the survey.
+```{r}
+barplot(table(data$gender), main="Frequency of F and M in the survey",xlab="gender", ylab="Frequency",col="lightpink")
+```
+
+Theres also a wide range of individuals in this survey from 17 to 55 and the most freq is 21.
+```{r}
+barplot(table(data$Age), main="age in the survey",xlab="age", ylab="Frequency",col="lightgreen")
+```
+
+This is a good positive linear relationship between attitude and points and weaker between other variables and points( some negative-- red circles).
+```{r}
+M = cor(data[,-4])
+corrplot::corrplot(M)
+```
+Now, we can build a linear regression model with some interesting variables. I have chosen attitude, stra and surf based on the correlation plot from above. Based on the summary, only attitude seems to be important predictor( based on the p value from the t statistic of 5.91 and comes from the estimate 3.3952 divided by the se error of 0.5741) and others are not significant in terms of p values. For example, surf has a p value of 0.46 so thats super insignificant. We will remove it and reformulate the model. In this lm1 model, the R2 is 0.192 which means that these variables only explain 19.2% of the variablity in points which is not very good. 
+
+The coefficient of attittude can be interpreted as : as an increase of 1 unit in attitude results in an increase of exam points by 3.39 units if other variables are held constant. 
+
+```{r}
+lm1=lm(Points ~ stra + attitude + surf, data = data)
+summary(lm1)
+```
+
+Because surf had the highest pvalue(bad), we remove it first and we see that stra is now significant. R2 of 0.195 which is only a bit better( only 19% of the variablity in points is explained by this model). We will remove stra next but lm2 is my final model. In this case, there is a good relationship between attitude and points and a small but still technically statistically sig relationship with stra but only when they are together( would need to check independently). In this case, 1 unit increase in attitude results in a 3.4 unit increase in points when stra is held constant and 1 unit increase in stra results in a 0.91 unit increase in points when attitude is held constant.
+```{r}
+lm2=lm(Points ~ stra + attitude , data = data)
+summary(lm2)
+```
+If we remove it again( if we only want really signif predictors), the r2 goes down to 0.18 so we better keep it. This means only 18% of the variability 
+```{r}
+lm3=lm(Points ~ attitude , data = data)
+summary(lm3)
+```
+
+Based on the diagnostic plots we can see if our model is good. 
+1. the residuals vs fitted plot: we would expect to see random points/residuals which means that the model is able to capture the overarching trend in the data. if we were to see some shape( for example a parabola) we would determine that the the linear model does not capture the data well. It is a good fit if the red line (showing the mean of the data points) is close to the horizontal gray dotted line.  
+2. The QQ plot: these points should be on the diagonal which means the residuals are normally distributed and the pvalues and SE are reliable. small deviations from this line are not a problem.  
+3.standardized residuals vs leverage: these points should not be out of the cooks distance of 1. otherwise these would be high influence points which could affect the slope and the estimates of the lm model would not be reliable.
+```{r}
+par(mfrow=c(2,2))
+plot(lm2)
+```
+
+
