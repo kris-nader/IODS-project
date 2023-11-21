@@ -1,30 +1,93 @@
----
-title: "chapter3"
-author: "Kristen Michelle Nader"
-date: "2023-11-20"
-output: html_document
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
+library(ggplot2)
+library(ggpubr)
+library(janitor)
+library(caret)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r}
+alko=read_csv("./data/alko_data.csv")
+str(alko)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+colnames(alko)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+alko1=read_csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv")
+dim(alko1) ## sanity check that the datasets are the same and the data wrangling was successfull
+```
+
+
+Choosing the 4 variables of interest
+```{r}
+
+a=ggplot(alko, aes(x = as.factor(high_use), y = G3))+geom_boxplot() + ylab("grade")+theme_classic()+ggtitle("Grades and High Use")
+b=ggplot(alko, aes(x = high_use, y = absences))+geom_boxplot() + ylab("absences")+theme_classic()+ggtitle("Absences and High Use")
+c=ggplot(alko, aes(x = high_use, y = age))+geom_boxplot() + ylab("age")+theme_classic()+
+    ggtitle("Age and High Use")
+d=ggplot(alko, aes(x = high_use, y = goout))+geom_boxplot() + ylab("goout")+theme_classic()+
+    ggtitle("Going Out and High Use")
+ggarrange(a, b, c, d,labels = c("A", "B", "C", "D"),ncol = 2, nrow = 2)
+
+```
+```{r}
+alko_use_select=select(alko, absences, G3, age, goout, high_use)
+```
+
+```{r}
+glm.1 <- glm(high_use ~., data = alko_use_select, family = "binomial")
+summary(glm.1)
+```
+
+The model coefficients
+```{r}
+coef(glm.1)
+```
+Calculate the log-odds ratio and confidence intervals
+```{r}
+LOR=coef(glm.1) %>% exp
+CI=confint(glm.1) %>% exp
+cbind(LOR, CI)
+```
+Using only significant variables
+```{r}
+alko_use_select2=select(alko_use_select, high_use, absences, goout)
+glm2=glm(high_use ~ absences + goout, data = alko_use_select2, family = "binomial")
+summary(glm2)
+```
+```{r}
+alko_use_select2$predicted_values=predict(glm2, newdata = alko_use_select2, type = "response")
+alko_use_select2$predicted_values=alko_use_select2$predicted_values > 0.5
+cm=confusionMatrix(as.factor(alko_use_select2$predicted_values), as.factor(alko_use_select2$high_use), mode = "everything")
+
+plt <- as.data.frame(cm$table)
+plt$Prediction <- factor(plt$Prediction, levels=rev(levels(plt$Prediction)))
+
+ggplot(plt, aes(Prediction,Reference, fill= Freq)) +
+        geom_tile() + geom_text(aes(label=Freq)) +
+        scale_fill_gradient(low="white", high="#009194")
+
+## (46+236)/370=0.76
+```
+# random guessing
+```{r}
+set.seed(1)
+high_use_random=ifelse(rbinom(370, 1, 0.5)==1,"TRUE","FALSE")
+table(high_use_random, alko_use_select2$high_use)
+
+##(134+46)/370
+```
+10 fold cv
+
+```{r}
+
+```
+
