@@ -18,7 +18,9 @@ Welcome to this weeks learning exercise where we look into cross validation and 
 
 This weeks data is from a questionnare on student performance with an emphasis on the effect of alcohol.
 There are 2 parts to this analysis:  
-* Data Wrangling: Join 2 datasets together to form the alko_data.csv. 
+
+* Data Wrangling: Join 2 datasets together to form the alko_data.csv.
+
 * Data Analysis: Study the relationship between high/low alcohol consumption and other variables.  
 
 ## Part 1: Data Wrangling
@@ -32,20 +34,26 @@ From this we can see the structure of the data with 370 rows and 35 variables. T
 colnames(alko)
 ```
 The original source of the data is here: https://www.archive.ics.uci.edu/dataset/320/student+performance.
-This data was merged from 2 datasets from secondary schools in 2 Portuguese schools. The variables include those like( i will not list them all):  
+This data was merged from 2 datasets from secondary schools in 2 Portuguese schools. The variables include those like( i will not list them all):   
 * student grades(G1,G2,G3). 
+
 * guardian - student's guardian (nominal: 'mother', 'father' or 'other'). 
+
 * Dalc - workday alcohol consumption (numeric: from 1 - very low to 5 - very high). 
+
 * Walc - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high). 
+
 * absences - number of school absences (numeric: from 0 to 93). 
 
-The two original datasets consist of data from 2 classes: Math (mat) and Portuguese(por) which were merged into one. Originally, there were 33 variables but we construct 2 more:    
+The two original datasets consist of data from 2 classes: Math (mat) and Portuguese(por) which were merged into one. Originally, there were 33 variables but we construct 2 more: 
+
 * alko_use as the average of the answers related to weekday and weekend alcohol consumption. 
+
 * logical data TRUE for students for which 'alko_use' is greater than 2 (and FALSE otherwise. 
 
 ```{r}
-alko1=read_csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv")
-dim(alko1) ## sanity check that the datasets are the same and the data wrangling was successfull
+#alko1=read_csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv")
+#dim(alko1) ## sanity check that the datasets are the same and the data wrangling was successfull
 ```
 
 

@@ -379,10 +379,13 @@ library(dplyr)</code></pre>
 validation and logistic regression!</p>
 <p>This weeks data is from a questionnare on student performance with an
 emphasis on the effect of alcohol. There are 2 parts to this
-analysis:<br />
-* Data Wrangling: Join 2 datasets together to form the alko_data.csv. *
-Data Analysis: Study the relationship between high/low alcohol
-consumption and other variables.</p>
+analysis:</p>
+<ul>
+<li><p>Data Wrangling: Join 2 datasets together to form the
+alko_data.csv.</p></li>
+<li><p>Data Analysis: Study the relationship between high/low alcohol
+consumption and other variables.</p></li>
+</ul>
 <div id="part-1-data-wrangling" class="section level2">
 <h2>Part 1: Data Wrangling</h2>
 <p>We joined 2 datasets together to form the basis for this analysis.
@@ -487,29 +490,28 @@ variables. These variables are printed below.</p>
 This data was merged from 2 datasets from secondary schools in 2
 Portuguese schools. The variables include those like( i will not list
 them all):<br />
-* student grades(G1,G2,G3). * guardian - student’s guardian (nominal:
-‘mother’, ‘father’ or ‘other’). * Dalc - workday alcohol consumption
-(numeric: from 1 - very low to 5 - very high). * Walc - weekend alcohol
-consumption (numeric: from 1 - very low to 5 - very high). * absences -
-number of school absences (numeric: from 0 to 93).</p>
+* student grades(G1,G2,G3).</p>
+<ul>
+<li><p>guardian - student’s guardian (nominal: ‘mother’, ‘father’ or
+‘other’).</p></li>
+<li><p>Dalc - workday alcohol consumption (numeric: from 1 - very low to
+5 - very high).</p></li>
+<li><p>Walc - weekend alcohol consumption (numeric: from 1 - very low to
+5 - very high).</p></li>
+<li><p>absences - number of school absences (numeric: from 0 to
+93).</p></li>
+</ul>
 <p>The two original datasets consist of data from 2 classes: Math (mat)
 and Portuguese(por) which were merged into one. Originally, there were
-33 variables but we construct 2 more:<br />
-* alko_use as the average of the answers related to weekday and weekend
-alcohol consumption. * logical data TRUE for students for which
-‘alko_use’ is greater than 2 (and FALSE otherwise.</p>
-<pre class="r"><code>alko1=read_csv(&quot;https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv&quot;)</code></pre>
-<pre><code>## Rows: 370 Columns: 35
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: &quot;,&quot;
-## chr (17): school, sex, address, famsize, Pstatus, Mjob, Fjob, reason, guardi...
-## dbl (17): age, Medu, Fedu, traveltime, studytime, famrel, freetime, goout, D...
-## lgl  (1): high_use
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>dim(alko1) ## sanity check that the datasets are the same and the data wrangling was successfull</code></pre>
-<pre><code>## [1] 370  35</code></pre>
+33 variables but we construct 2 more:</p>
+<ul>
+<li><p>alko_use as the average of the answers related to weekday and
+weekend alcohol consumption.</p></li>
+<li><p>logical data TRUE for students for which ‘alko_use’ is greater
+than 2 (and FALSE otherwise.</p></li>
+</ul>
+<pre class="r"><code>#alko1=read_csv(&quot;https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv&quot;)
+#dim(alko1) ## sanity check that the datasets are the same and the data wrangling was successfull</code></pre>
 </div>
 <div id="part-2-analysis" class="section level2">
 <h2>Part 2: Analysis</h2>
