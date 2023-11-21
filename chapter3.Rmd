@@ -1,24 +1,47 @@
-
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+# Chapter 3 Logistic Regression
 ```{r}
 library(ggplot2)
 library(ggpubr)
 library(janitor)
 library(caret)
+library(readr)
+library(tidyr)
+library(dplyr)
 ```
 
+Welcome to this weeks learning exercise where we look into cross validation and logistic regression!
 
+This weeks data is from a questionnare on student performance with an emphasis on the effect of alcohol.
+There are 2 parts to this analysis:  
+1. Data Wrangling: Join 2 datasets together to form the alko_data.csv. 
+2. Data Analysis: Study the relationship between high/low alcohol consumption and other variables.  
 
-
+## Part 1: Data Wrangling
+We joined 2 datasets together to form the basis for this analysis. Please see R script **./data/create_alc.R" for more information.
 ```{r}
 alko=read_csv("./data/alko_data.csv")
 str(alko)
 ```
-
-
+From this we can see the structure of the data with 370 rows and 35 variables. These variables are printed below. 
 ```{r}
 colnames(alko)
 ```
+The original source of the data is here: https://www.archive.ics.uci.edu/dataset/320/student+performance.
+This data was merged from 2 datasets from secondary schools in 2 Portuguese schools. The variables include those like( i will not list them all):  
+- student grades(G1,G2,G3). 
+- guardian - student's guardian (nominal: 'mother', 'father' or 'other'). 
+- Dalc - workday alcohol consumption (numeric: from 1 - very low to 5 - very high). 
+- Walc - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high). 
+- absences - number of school absences (numeric: from 0 to 93). 
 
+The two original datasets consist of data from 2 classes: Math (mat) and Portuguese(por) which were merged into one. Originally, there were 33 variables but we construct 2 more:    
+1) alko_use as the average of the answers related to weekday and weekend alcohol consumption. 
+2) logical data TRUE for students for which 'alko_use' is greater than 2 (and FALSE otherwise. 
 
 ```{r}
 alko1=read_csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv")
@@ -26,9 +49,13 @@ dim(alko1) ## sanity check that the datasets are the same and the data wrangling
 ```
 
 
-Choosing the 4 variables of interest
+# Part 2: Analysis 
+The purpose now is to study the relationships between high/low alcohol consumption and some of the other variables in the data. We choose 4 interesting variables and look at their relationship with **high_use**. 
+AGE: I expect more heavy drinkers in older students. 
+GOOUT: Influence and peer pressure heavily associated with drinking in teenagers.  
+ABSENCES: More school absence with high alcohol use (hungover recovery). 
+G3: Higher grades for those that don't drink. 
 ```{r}
-
 a=ggplot(alko, aes(x = as.factor(high_use), y = G3))+geom_boxplot() + ylab("grade")+theme_classic()+ggtitle("Grades and High Use")
 b=ggplot(alko, aes(x = high_use, y = absences))+geom_boxplot() + ylab("absences")+theme_classic()+ggtitle("Absences and High Use")
 c=ggplot(alko, aes(x = high_use, y = age))+geom_boxplot() + ylab("age")+theme_classic()+
@@ -38,12 +65,20 @@ d=ggplot(alko, aes(x = high_use, y = goout))+geom_boxplot() + ylab("goout")+them
 ggarrange(a, b, c, d,labels = c("A", "B", "C", "D"),ncol = 2, nrow = 2)
 
 ```
+From these plots we can see that students that do not drink(or are heavy drinkers) have higher grades,less absences, younger, and dont go out as much(sadly). We can also look at cross tabulations but I dont find them useful as a visual aid-- to much numbers.
+
+```{r}
+tabyl(alko, famrel, alko_use, high_use)
+```
+
+I will not subset the data just so it is easier to work with ( so i can use the **.**)
 ```{r}
 alko_use_select=select(alko, absences, G3, age, goout, high_use)
 ```
 
+Model with a logistic regression(because we have a logical outcome). We can see that absences and goout are the significant variables.
 ```{r}
-glm.1 <- glm(high_use ~., data = alko_use_select, family = "binomial")
+glm.1=glm(high_use ~., data = alko_use_select, family = "binomial")
 summary(glm.1)
 ```
 
@@ -51,13 +86,39 @@ The model coefficients
 ```{r}
 coef(glm.1)
 ```
-Calculate the log-odds ratio and confidence intervals
+Calculate the log-odds ratio and confidence intervals. 
+* For one unit increase in 'absences', there is a 1.07589001 increase in the log odds of having high consumption of alcohol. This is in line with my hypothesis that high alcohol consumptiion and absesnces are related.  
+
+* For one unit increase in 'goout', there is 2.20 increase in the log odds of   having high consumption of alcohol. Once again, this is consistent with my hypothesis of more often going out with friends is associated with more consumption of alcohol.  
+
+* For one unit increase in 'G3', there is a 0.95626587 increase in the log odds having high consumption of alcohol. Consistent with our hypothesis but weak.  
+
+* Lastly, For one unit increase in 'age', there is a 1.04668570 increase in the log odds having high consumption of alcohol. Consistent with our hypothesis.  
+
+
 ```{r}
 LOR=coef(glm.1) %>% exp
 CI=confint(glm.1) %>% exp
 cbind(LOR, CI)
 ```
-Using only significant variables
+To evaluate the model, we can look at the deviance
+```{r}
+with(glm.1, null.deviance - deviance)
+```
+```{r}
+with(glm.1, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
+```
+We have a significant chiseq so this model is better than a null model
+
+We can use pseudo R2 with 0.14 which means only a small part of the deviance is explained by this model which isnt amazing. However, this isnt binded between 0 and 1 like R2
+```{r}
+library(pscl)
+pR2(glm.1)
+
+```
+
+
+Using only significant variables with a 0.76 accuracy
 ```{r}
 alko_use_select2=select(alko_use_select, high_use, absences, goout)
 glm2=glm(high_use ~ absences + goout, data = alko_use_select2, family = "binomial")
@@ -77,7 +138,7 @@ ggplot(plt, aes(Prediction,Reference, fill= Freq)) +
 
 ## (46+236)/370=0.76
 ```
-# random guessing
+Random guessing with 0.48 accuracy which is worse
 ```{r}
 set.seed(1)
 high_use_random=ifelse(rbinom(370, 1, 0.5)==1,"TRUE","FALSE")
@@ -85,9 +146,93 @@ table(high_use_random, alko_use_select2$high_use)
 
 ##(134+46)/370
 ```
-10 fold cv
+Then we can start generalizing with a 10 fold cross valiation
 
 ```{r}
+train_=trainControl(method = "cv", number = 10)
+
+cv =train(factor(high_use) ~.,
+               data = alko_use_select2,
+               trControl = train_,
+               method = "glm",
+               family=binomial())
+cv
+```
+Accuracy of 0.7 is an error of 0.2378378 which means is a lower error than the one given(0.26 but we can try other models just for fun)!
+For example this model has an accuracy of 0.7351667 and an error of 0.2648333 which is what the exercise set gives us.
+```{r}
+cv1 =train(factor(high_use) ~ age + famrel + goout + health, data = alko,
+               trControl = train_,
+               method = "glm",
+               family=binomial())
+cv1
+```
+Lets try more models:
+we start with a full model. This consists of 34 predictors and from now we know there will definitely be overfitting.
+
+```{r}
+ cvfull=train(factor(high_use) ~ .,
+               data = alko,
+               trControl = train_,
+               method = "glm",
+               family=binomial())
+cvfull
+```
+And thats exactly what we get. The output says that glm didnt converge so the results are misleading. We get an accuracy of 100% which is suspicious and I wouldnt trust it.
+We can try another model with half the predictors(17 random pred). 
+```{r}
+index=sample(34,17,replace=FALSE)
+cvhalf=train(factor(high_use) ~ .,
+               data = alko[,c(index,35)],
+               trControl = train_,
+               method = "glm",
+               family=binomial())
+cvhalf
+```
+Again we get the same results. We can look into a stepwise selection and see which variables come up as most interesting--feature selection. It turns out only 2 variables are important Dalc and Walc we can try those out. This is interesting as the high use is based on alko_use which was calculated with these variables. 
+
+alko$alko_use = (alko$Dalc + alko$Walc)/2
+alko$high_use=ifelse(alko_use>2,TRUE,FALSE)
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+glm_all=glm(high_use ~., data = alko, family = "binomial")
+slm.stepwise=step(glm_all,direction="both")
 
 ```
+
+But when we use these 2, we get overfitting.
+```{r}
+cvstwo=train(factor(high_use) ~ Walc+Dalc,
+               data = alko,
+               trControl = train_,
+               method = "glm",
+               family=binomial())
+
+cvstwo
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+cv_logistic =function(num_predictors) {
+    if(num_predictors> 34){
+        break
+    }
+    predictors=names(alko)[c(1:(num_predictors))] 
+    form= as.formula(paste("as.factor(high_use) ~", paste(predictors, collapse = " + ")))
+  
+    model=train(form,
+                 data = alko,
+                 trControl = train_,
+                 method = "glm",
+                 family = binomial())
+  
+  return(error = model$results$Accuracy)
+}
+
+num_predictors_range =seq(ncol(alko) - 1, 1, by = -1)
+cv_results=sapply(num_predictors_range, cv_logistic)
+
+plot(num_predictors_range,1-cv_results, type = 'b', col = 'blue', pch = 16, xlab = 'Number of Predictors', ylab = 'Error', main = 'Cross-Validation Performance')
+
+
+```
+
 
