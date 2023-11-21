@@ -60,8 +60,11 @@ The two original datasets consist of data from 2 classes: Math (mat) and Portugu
 ## Part 2: Analysis
 The purpose now is to study the relationships between high/low alcohol consumption and some of the other variables in the data. We choose 4 interesting variables and look at their relationship with **high_use**. 
 * AGE: I expect more heavy drinkers in older students. 
+
 * GOOUT: Influence and peer pressure heavily associated with drinking in teenagers.  
+
 * ABSENCES: More school absence with high alcohol use (hungover recovery). 
+
 * G3: Higher grades for those that don't drink. 
 ```{r}
 a=ggplot(alko, aes(x = as.factor(high_use), y = G3))+geom_boxplot() + ylab("grade")+theme_classic()+ggtitle("Grades and High Use")

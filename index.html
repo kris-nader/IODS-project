@@ -403,7 +403,7 @@ Analysis</a></li>
 GitHub repository here. This is an R Markdown (.Rmd) file so you should
 use R Markdown syntax.</em></p>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Tue Nov 21 09:03:01 2023&quot;</code></pre>
+<pre><code>## [1] &quot;Tue Nov 21 09:06:06 2023&quot;</code></pre>
 <p>hello. its 6:11 Thursday November 2nd. I expect this course to be a
 refresher on topics I am already familiar with. I found this course on
 sisu. Im looking forward to working with new data, using new visualizing
@@ -809,10 +809,14 @@ than 2 (and FALSE otherwise.</p></li>
 alcohol consumption and some of the other variables in the data. We
 choose 4 interesting variables and look at their relationship with
 <strong>high_use</strong>. * AGE: I expect more heavy drinkers in older
-students. * GOOUT: Influence and peer pressure heavily associated with
-drinking in teenagers.<br />
-* ABSENCES: More school absence with high alcohol use (hungover
-recovery). * G3: Higher grades for those that don’t drink.</p>
+students.</p>
+<ul>
+<li><p>GOOUT: Influence and peer pressure heavily associated with
+drinking in teenagers.</p></li>
+<li><p>ABSENCES: More school absence with high alcohol use (hungover
+recovery).</p></li>
+<li><p>G3: Higher grades for those that don’t drink.</p></li>
+</ul>
 <pre class="r"><code>a=ggplot(alko, aes(x = as.factor(high_use), y = G3))+geom_boxplot() + ylab(&quot;grade&quot;)+theme_classic()+ggtitle(&quot;Grades and High Use&quot;)
 b=ggplot(alko, aes(x = high_use, y = absences))+geom_boxplot() + ylab(&quot;absences&quot;)+theme_classic()+ggtitle(&quot;Absences and High Use&quot;)
 c=ggplot(alko, aes(x = high_use, y = age))+geom_boxplot() + ylab(&quot;age&quot;)+theme_classic()+
