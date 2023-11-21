@@ -18,8 +18,8 @@ Welcome to this weeks learning exercise where we look into cross validation and 
 
 This weeks data is from a questionnare on student performance with an emphasis on the effect of alcohol.
 There are 2 parts to this analysis:  
-1. Data Wrangling: Join 2 datasets together to form the alko_data.csv. 
-2. Data Analysis: Study the relationship between high/low alcohol consumption and other variables.  
+* Data Wrangling: Join 2 datasets together to form the alko_data.csv. 
+* Data Analysis: Study the relationship between high/low alcohol consumption and other variables.  
 
 ## Part 1: Data Wrangling
 We joined 2 datasets together to form the basis for this analysis. Please see R script **./data/create_alc.R" for more information.
@@ -33,15 +33,15 @@ colnames(alko)
 ```
 The original source of the data is here: https://www.archive.ics.uci.edu/dataset/320/student+performance.
 This data was merged from 2 datasets from secondary schools in 2 Portuguese schools. The variables include those like( i will not list them all):  
-- student grades(G1,G2,G3). 
-- guardian - student's guardian (nominal: 'mother', 'father' or 'other'). 
-- Dalc - workday alcohol consumption (numeric: from 1 - very low to 5 - very high). 
-- Walc - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high). 
-- absences - number of school absences (numeric: from 0 to 93). 
+* student grades(G1,G2,G3). 
+* guardian - student's guardian (nominal: 'mother', 'father' or 'other'). 
+* Dalc - workday alcohol consumption (numeric: from 1 - very low to 5 - very high). 
+* Walc - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high). 
+* absences - number of school absences (numeric: from 0 to 93). 
 
 The two original datasets consist of data from 2 classes: Math (mat) and Portuguese(por) which were merged into one. Originally, there were 33 variables but we construct 2 more:    
-1) alko_use as the average of the answers related to weekday and weekend alcohol consumption. 
-2) logical data TRUE for students for which 'alko_use' is greater than 2 (and FALSE otherwise. 
+* alko_use as the average of the answers related to weekday and weekend alcohol consumption. 
+* logical data TRUE for students for which 'alko_use' is greater than 2 (and FALSE otherwise. 
 
 ```{r}
 alko1=read_csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv")
@@ -51,10 +51,10 @@ dim(alko1) ## sanity check that the datasets are the same and the data wrangling
 
 ## Part 2: Analysis 
 The purpose now is to study the relationships between high/low alcohol consumption and some of the other variables in the data. We choose 4 interesting variables and look at their relationship with **high_use**. 
-AGE: I expect more heavy drinkers in older students. 
-GOOUT: Influence and peer pressure heavily associated with drinking in teenagers.  
-ABSENCES: More school absence with high alcohol use (hungover recovery). 
-G3: Higher grades for those that don't drink. 
+* AGE: I expect more heavy drinkers in older students. 
+* GOOUT: Influence and peer pressure heavily associated with drinking in teenagers.  
+* ABSENCES: More school absence with high alcohol use (hungover recovery). 
+* G3: Higher grades for those that don't drink. 
 ```{r}
 a=ggplot(alko, aes(x = as.factor(high_use), y = G3))+geom_boxplot() + ylab("grade")+theme_classic()+ggtitle("Grades and High Use")
 b=ggplot(alko, aes(x = high_use, y = absences))+geom_boxplot() + ylab("absences")+theme_classic()+ggtitle("Absences and High Use")
