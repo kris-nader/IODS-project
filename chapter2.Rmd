@@ -1,4 +1,4 @@
-# Linear regression
+# Chapter 2: Linear regression
 
 *Describe the work you have done this week and summarize your learning.*
 *Summary of the week (completed work and learning)*

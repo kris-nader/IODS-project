@@ -1,0 +1,207 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+# Chapter 4 Linear Discriminant Analysis (LDA)
+```{r message=FALSE, warning=FALSE}
+set.seed(199)
+library(MASS)
+library(ggplot2)
+library(GGally)
+library(corrplot)
+library(tidyr)
+library(ggord)
+library(cluster) 
+library(factoextra)
+
+```
+To get started, we load the *Boston Dataset* from the *MASS* package and get a glimpse of the data. 
+This dataset consists of information on 506 houses in Boston. It has 14 variables. I will list a few:
+* crim : per capita rate by town
+* zn : proportion of residential land zoned for lots over 25,000 sq.f
+* indus : proportion of non-retail business acres per town.
+* chas : Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+* rm : average number of rooms per dwelling.
+```{r}
+data("Boston")
+str(Boston)
+```
+We can look at their relationship with ggpairs. *rm* seems to be the only variable that is normally distributed.
+```{r message=FALSE, warning=FALSE}
+GGally::ggpairs(Boston)
+```
+The correlation matrix can also be used to analyze relationships between variables. For example, there is a negative correlation between nox and dis. A positive correlation between tax and nox. 
+```{r}
+cor_matrix=cor(Boston) %>% round(digits = 2)
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+```
+We can now scale the data.
+```{r}
+boston_scale=data.frame(scale(Boston))
+summary(boston_scale)
+boston_scale[1:5,1:5]
+Boston[1:5,1:5]
+
+```
+We will also create a new categorical variable based on the quantiles. I split into 4 categories: low, low_medium, high_medium and high
+```{r}
+breaks=quantile(boston_scale$crim)
+breaks
+```
+
+```{r}
+crime_scaled_cat =cut(boston_scale$crim, breaks = breaks, include.lowest = TRUE, labels = c("low", "medium_low", "medium_high", "high"))
+table(crime_scaled_cat)
+```
+
+```{r}
+temp=data.frame(boston_scale$crim,crime_scaled_cat)
+temp[sample(1:length(boston_scale$crim),10,replace=FALSE),]
+
+boston_scale$crim=NULL
+boston_scale$crime_scaled_cat=crime_scaled_cat
+
+```
+Now, we want to divide the dataset into training and testing set. The training set will be composed of 80% of the data.
+```{r}
+training_set=sample(nrow(boston_scale), nrow(boston_scale)*.8)
+train=boston_scale[training_set,]
+test=boston_scale[-training_set,]
+```
+
+Fit the linear discriminant analysis can be fit on the training data with 94% explained with LD1. LDA is a classification and dimensionality reduction method that fits linear combinations of variables to seperate the target variable which can be multi-class or binary. 
+```{r}
+lda_training=lda(crime_scaled_cat~., train)
+lda_training
+```
+We can look at the biplot were *rad* appears to be the most important variable in discriminanting between classes. It also implies that rad is better able to influence the *crim* variable. They are also highly correlated if we look at the correlation plot from above.
+```{r}
+ggord(lda_training, train$crime_scaled_cat)
+```
+
+```{r}
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "orange", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime_scaled_cat)
+
+# plot the lda results
+plot(lda_training, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda_training, myscale = 1)
+```
+
+
+
+
+Then, remove the outcome variable from the test set and use it for the predictions.
+```{r}
+crime_test=test$crime_scaled_cat
+test$crime_scaled_cat=NULL
+```
+
+This model appears to be good at discrimanting the high classes.
+```{r}
+test_pred=predict(lda_training,test)
+table(correct = crime_test, predicted = test_pred$class)
+
+```
+This model has an accuracy of 78%!
+```{r}
+library(caret)
+con_table=confusionMatrix(data=test_pred$class, reference = crime_test)
+con_table
+```
+Now we can look at k means. The data is re-loaded and re-scaled. Distance is calculated between every observation using euclidean distance (default).
+```{r}
+data(Boston)
+boston_scale=scale(Boston)
+boston_scale=as.data.frame(boston_scale)
+dist_boston_eucl=dist(boston_scale)
+summary(dist_boston_eucl)
+
+```
+
+A preliminary test is done first just to get a clue on kmeans. Then we calculate kmeans with different k values to make the scree plot. Im thinking 2 clusters but I will look at the silhouette distance to also look at which clusters to take. In this case we use the TWCSS which changes between 1 to 2.
+```{r}
+km_euc = kmeans(dist_boston_eucl, centers = 4)
+
+set.seed(123)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(dist_boston_eucl, k)$tot.withinss})
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+```{r}
+silhouette_score <- function(k){
+  km <- kmeans(dist_boston_eucl, centers = k)
+  ss <- silhouette(km$cluster, dist_boston_eucl)
+  mean(ss[, 3])
+}
+k <- 2:10
+avg_sil <- sapply(k, silhouette_score)
+plot(k, type='b', avg_sil, xlab='Number of clusters', ylab='Average Silhouette Scores', frame=FALSE)
+
+
+```
+Using 2 clusters, recalculate k means 
+```{r}
+km_euc_2 = kmeans(dist_boston_eucl, centers = 2)
+boston_scale$km_euc_2=km_euc_2$cluster
+boston_scale[1:5,]
+```
+
+```{r}
+pairs(boston_scale[1:5], col = boston_scale$km_euc_2)
+```
+
+Redo the same with 4 clusters on the whole original dataset and refit the model using the kmeans clustering. This model LD1 is able to discriminate 80% of the data.
+```{r}
+set.seed(123)
+data("Boston")
+boston_scale=scale(Boston)
+boston_scale=as.data.frame(boston_scale)
+km=kmeans(boston_scale, centers = 3)
+
+boston_b =boston_scale %>% 
+  mutate(crim = as.factor(km$cluster))
+
+training_index=sample(nrow(boston_b),size=nrow(boston_b)*0.8)
+train1=boston_b[training_index,]
+test1=boston_b[-training_index,]
+lda.fit4=lda(crim ~ ., data = train1)
+lda.fit4
+
+```
+ Rad is most influential variable for separating and discriminating and that this varuable influence mainly class 1. Age is the next most influential and is better able to seperate classes 2 and 3
+```{r}
+ggord(lda.fit4, train1$crim)
+
+```
+
+Look at the 3D biplot
+```{r}
+library(plotly)
+
+crime_train=train$crime_scaled_cat
+model_predictors <- dplyr::select(train, -crime_scaled_cat)
+
+km_euc_2 = kmeans(dist(model_predictors), centers = 2)
+
+matrix_product <- as.matrix(model_predictors) %*% lda_training$scaling
+matrix_product <- as.data.frame(matrix_product)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers',color =crime_train )
+```
+
+
+
+
+
