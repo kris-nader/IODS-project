@@ -3,7 +3,11 @@ title: "chapter5"
 author: "Kristen Michelle Nader"
 date: "2023-12-04"
 output: html_document
+
+
 ---
+
+# Dimensionality reduction
 
 I am very sick so i will do the bare minimum
 ```{r}
@@ -99,6 +103,6 @@ fviz_screeplot(mca_tea, addlabels = TRUE)
 ```
 from the scree plot we can see that the 1st 4 dimensions explains 50% of variability. In the biplot, distance means similarity so closer points are more similar. 
 ```{r}
-plot(mca_tea,invisible=c("ind"))
+plot(mca_tea)
 ```
 
