@@ -19,3 +19,26 @@ dim(human) # 195 obs and 19 variables
 
 write_csv(human,file="./data/human_data.csv")
 
+human=read_csv("./data/human_data.csv")
+str(human)
+summary(human)
+## 195 rows and 19 columns
+
+library(dplyr)
+colnames(human)
+keep = c("Country", "edu2Ratio", "labRatio", "Edu.Exp", "Life.Exp", "GNI", "Mat.Mor", "Ado.Birth", "Parli.F")
+human = select(human, one_of(keep))
+dim(human)
+
+
+human_cc =filter(human, complete.cases(human))
+dim(human_cc)
+
+#Removing the region-related observations.
+tail(human_cc, 10)
+last = nrow(human_cc) - 7
+human_= human_cc[1:last, ]
+dim(human_)
+
+
+write.csv(human_, file = "./data/human_data.csv")

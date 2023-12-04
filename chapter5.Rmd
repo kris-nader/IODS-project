@@ -1,0 +1,104 @@
+---
+title: "chapter5"
+author: "Kristen Michelle Nader"
+date: "2023-12-04"
+output: html_document
+---
+
+I am very sick so i will do the bare minimum
+```{r}
+
+human=read_csv("./data/human_data.csv",)
+summary(human)
+rownames(human)=human$Country
+human=human[,3:10]
+head(human)
+colnames(human)
+```
+most are not  normally distibuted expect maybe Edu.Exp
+```{r}
+par(mfrow = c(2,4))
+hist(human$edu2Ratio, main="edu2Ratio", xlab="")
+hist(human$labRatio, main="labRatio", xlab="")
+hist(human$Edu.Exp, main="Edu.Exp", xlab="")
+hist(human$Life.Exp, main="Life.Exp", xlab="")
+hist(human$GNI, main="GNI", xlab="")
+hist(human$Mat.Mor, main="Mat.Mor", xlab="")
+hist(human$Ado.Birth, main="Ado.Birth", xlab="")
+hist(human$Parli.F, main="Parli.F", xlab="")
+```
+
+```{r}
+summary(human)
+```
+
+correlation plot: we have some strong correlations like edu.exp and life exp 
+
+```{r}
+library(corrplot)
+cor_matrix=cor(human) %>% round(digits = 2)
+cor_matrix
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+```
+now we do pca on the non standardized dataset
+```{r}
+pca_human_raw= prcomp(human)
+sum1=summary(pca_human_raw)
+pca_imp_raw = round(100*sum1$importance[2,], digits = 1)
+pca_imp_raw
+biplot(pca_human_raw)
+```
+now we do pca on standardized data
+```{r}
+human_std=scale(human)
+pca_human_std =prcomp(human_std)
+sum2 <- summary(pca_human_std)
+sum2
+```
+This seems more reasonable the other had fully 100% explained by PC1
+```{r}
+pca_pr2_std = round(100*sum2$importance[2,], digits = 1)
+pca_pr2_std
+```
+```{r}
+biplot(pca_human_std,cex = c(0.5, 0.5),)
+```
+The results of a pca on standardized vs non standardized are different. In the 1st(raw), 100% importance on GNI.
+Based on standardized data, we have postove results with education and poor results  with maternal mortality and adolescent birth rate. The 1st PC explained 54 and the second 16% of variation in the data. 
+
+multiple correspondance analysis
+```{r}
+library(tidyr)
+library(factoextra)
+library(ggplot2)
+library(dplyr)
+library(FactoMineR)
+```
+```{r}
+tea = read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE)
+
+tea_data= tea[, c(4,13:17)]
+summary(tea_data)
+```
+```{r}
+View(tea_data)
+```
+
+```{r}
+gather(tea_data) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
+```
+```{r}
+mca_tea = MCA(tea_data, graph = FALSE)
+mca_tea
+```
+```{r}
+summary(mca_tea)
+```
+```{r}
+fviz_screeplot(mca_tea, addlabels = TRUE)
+```
+from the scree plot we can see that the 1st 4 dimensions explains 50% of variability. In the biplot, distance means similarity so closer points are more similar. 
+```{r}
+plot(mca_tea,invisible=c("ind"))
+```
+
