@@ -7,7 +7,7 @@ output: html_document
 
 ---
 
-# Dimensionality reduction
+# Chapter 5: Dimensionality reduction
 
 I am very sick so i will do the bare minimum
 ```{r}

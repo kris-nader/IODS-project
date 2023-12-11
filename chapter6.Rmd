@@ -1,0 +1,197 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Chapter 6: Analysis of Longitudinal Data
+
+## Data Wrangling
+The R code for the Data is available in the "./data/meet_and_repeat.R"
+
+## Data Analysis
+Load libraries needed 
+```{r}
+lapply(c("dplyr", "ggplot2", "tidyr", "lme4", "tidyverse"), library, character.only = TRUE)
+```
+```{r}
+rats=read_csv("./data/rats_long.csv")
+bprs=read_csv("./data/bprs_long.csv")
+```
+### RATS
+We start with the longitudinal analysis of the RATS. This dataset is  from a study on understanding the effects of different diets on rat weights over a period of a few weeks. There are 176 datapoints and 5 variables in the long format of the dataset.
+- ID: factor variable and ID of the rat 1-16
+- Group: Group of the rat belonging to which diet
+- WD: the dat the measurement was taken
+- Weight: the weight of the rat in grams
+- time
+```{r}
+colnames(rats)
+head(rats)
+```
+```{r}
+summary(rats)
+```
+```{r}
+summary(rats)
+rats$Group=factor(rats$Group)
+rats$ID=factor(rats$ID)
+summary(rats)
+```
+Rats in Group 1 and group 3 have low within group variablity compared to group 2 that are more wildy dispersed.
+Group 1 rats have lower weight than other rats in other groups and group 3 has higher weight. There is also one odd rat in group 2 seems to be an outlier. The overall trend within each group is upwards- as time goes on, rats gain more weigth regardless of which group they belong to. 
+```{r}
+ggplot(rats, aes(x = Time, y = Weight, linetype = ID, color = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times = 4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(min(rats$Weight), max(rats$Weight)))
+```
+We will then standardize the variables so that they are easier to compare and do the same plot
+```{r}
+rats=rats %>%
+  group_by(Group) %>%
+  mutate(stdWeight = (Weight-mean(Weight))/sd(Weight)) %>%
+  ungroup()
+```
+
+Now there appears to be an outlier in each group but we still see the same upwards trend.
+```{r}
+ggplot(rats, aes(x = Time, y = stdWeight, linetype = ID, color = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times = 4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(min(rats$stdWeight), max(rats$stdWeight)))
+```
+Then we make a summary graph with standard deviation and mean
+
+```{r}
+rats_summary =rats %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(Weight), sterror = sd(Weight)  ) %>%
+  ungroup()
+```
+
+```{r}
+ggplot(rats_summary, aes(x = Time, y = mean, linetype = Group, shape = Group, color = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1, 2, 3)) +
+  geom_point(size = 3) +
+  scale_shape_manual(values = c(1, 2, 3)) +
+  geom_errorbar(aes(ymin = mean - sterror, ymax = mean + sterror, linetype = "1"), width = 0.3) +
+  theme(legend.position = c(0.8, 0.4)) +
+  scale_y_continuous(name = "mean +- sterr")
+```
+```{r}
+rats1 = rats %>%
+  group_by(Group, ID) %>%
+  summarise( mean=mean(Weight) ) %>%
+  ungroup()
+
+ggplot(rats1, aes(x = Group, y = mean, fill = Group)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape = 21, size = 3, position = position_dodge(width = 0.75), color = "black") +
+  scale_y_continuous(name = "mean") +
+  theme_minimal() 
+```
+```{r}
+rats_remove_outliers=filter(rats1, (Group==1 & mean>250) | (Group==2 & mean < 590) | (Group==3 & mean>500))
+```
+
+We have removed outliers for each group- and we see that things have changed in the boxplots. Group 2 lost skewbness and so does group 3. Group 1 gained some skewness towards high values 
+```{r}
+ggplot(rats_remove_outliers, aes(x = Group, y = mean, fill = Group)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape = 21, size = 3, position = position_dodge(width = 0.75), color = "black") +
+  scale_y_continuous(name = "mean remove outliers") +
+  theme_minimal() 
+```
+
+### BPRS
+This dataset was taken from 40 males undergoing treatment that assesses hostility, hallucinations and gradiosity which is rated on a brief psychiatric rating scale--BPRS from 1(not severe) to 7(very severe)
+360 datapoints and 5 variables:
+- subject: 1-20 
+- treatment: 1-2 
+- weeks: which week the measurment took place
+- bprs: score numeric
+- week: integer 0-8
+```{r}
+colnames(bprs)
+head(bprs)
+```
+
+```{r}
+dim(bprs)
+```
+```{r}
+bprs$treatment=as.factor(bprs$treatment)
+ggplot(bprs, aes(x = week, y = bprs, group = subject)) +
+  geom_line(aes(col = treatment))+
+  scale_y_continuous(name = "BPRS")+
+  theme(legend.position = "top")
+
+```
+```{r}
+bprs$subject=as.factor(bprs$subject)
+ggplot(bprs, aes(x = week, y = bprs, group = subject)) +
+  geom_line(aes(col = subject))+
+  scale_y_continuous(name = "BPRS")+
+  theme(legend.position = "top")
+```
+We can kinda identify a downwards trend happening. Now we do regression analysis. week appears to be highly significant w p value 2e-16. The estimate is -2.27 which indicates that there is a decrease in bprs as week increases which is what we saw before in the plots. Treatment is not significant-- so no support that the 2 treatments influence the BPRS rating. The r2 is also low so these are not good variables. We can remove it and redo the analysis.
+
+```{r}
+bprs_regression=lm(bprs~ week + treatment, data=bprs)
+
+summary(bprs_regression)
+```
+Theres only a little improvement in r2 so week is good but im not impressed by the model.
+```{r}
+bprs_regression_rm=lm(bprs~ week , data=bprs)
+
+summary(bprs_regression_rm)
+```
+Lets start with the random intercept model. treatment is still not significant
+```{r}
+bprs_random=lmer(bprs ~ week + treatment + (1 | subject), data = bprs, REML = FALSE)
+
+summary(bprs_random)
+```
+Random intercept and random slope model
+```{r}
+bprs_random_both <- lmer(bprs ~ week + treatment +(week | subject), data = bprs, REML = FALSE)
+
+summary(bprs_random_both)
+```
+```{r}
+anova(bprs_random_both, bprs_random)
+```
+we see a small p value so bprs_random_both is a better fit 
+
+Now we can look at model with interactions
+```{r}
+bprs_interaction= lmer(bprs ~ week + treatment + week*treatment + (week | subject), data = bprs, REML = FALSE)
+summary(bprs_interaction)
+
+```
+now we do anova
+```{r}
+anova(bprs_interaction,bprs_random_both)
+```
+becasue of the large p value then no strong implication that an interaction model is better-- so the previous is better
+
+plot the fitted vs the best fit
+
+```{r}
+
+bprs_new =bprs %>% mutate(fitted_v = fitted(bprs_random_both))
+
+ggplot(bprs_new, aes(x = week, y = fitted_v, col = subject)) +
+  geom_line(aes(linetype = treatment)) +
+  scale_x_continuous(name = "week", breaks = seq(0, 8, 2)) +
+  scale_y_continuous(name = "Fitted weight (grams)") +
+  theme(legend.position = "right")
+```
+
